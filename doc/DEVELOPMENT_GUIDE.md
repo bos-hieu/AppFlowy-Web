@@ -45,6 +45,9 @@ cd AppFlowy-Cloud
 # In a new terminal, navigate to your AppFlowy Web directory
 cd /path/to/appflowy-web
 cp dev.env .env
+# Optional: enable basic auth for the login page
+export AF_BASIC_AUTH_USER=myuser
+export AF_BASIC_AUTH_PWD=mypassword
 
 # Install dependencies and start
 corepack enable
@@ -81,6 +84,9 @@ cd /path/to/appflowy-web
 
 # Use matching production configuration
 cp deploy.env .env
+# Optional: enable basic auth for the login page
+export AF_BASIC_AUTH_USER=myuser
+export AF_BASIC_AUTH_PWD=mypassword
 
 # Install dependencies and start
 corepack enable
