@@ -10,6 +10,8 @@ import pino from 'pino';
 const distDir = path.join(__dirname, 'dist');
 const indexPath = path.join(distDir, 'index.html');
 const baseURL = process.env.AF_BASE_URL as string;
+const basicAuthUser = process.env.AF_BASIC_AUTH_USER || '';
+const basicAuthPwd = process.env.AF_BASIC_AUTH_PWD || '';
 const defaultSite = 'https://appflowy.com';
 
 const setOrUpdateMetaTag = ($: CheerioAPI, selector: string, attribute: string, content: string) => {
@@ -72,12 +74,33 @@ const fetchMetaData = async (namespace: string, publishName?: string) => {
   }
 };
 
+const validateBasicAuth = (authHeader: string | null) => {
+  if (!authHeader || !authHeader.startsWith('Basic ')) return false;
+  try {
+    const decoded = Buffer.from(authHeader.replace('Basic ', ''), 'base64').toString('utf8');
+    const [user, pwd] = decoded.split(':');
+    return user === basicAuthUser && pwd === basicAuthPwd;
+  } catch {
+    return false;
+  }
+};
+
 const createServer = async (req: Request) => {
   const timer = logRequestTimer(req);
   const reqUrl = new URL(req.url);
   const hostname = req.headers.get('host');
 
   logger.info(`Request URL: ${hostname}${reqUrl.pathname}`);
+
+  if (basicAuthUser && basicAuthPwd && reqUrl.pathname === '/login') {
+    if (!validateBasicAuth(req.headers.get('authorization'))) {
+      timer();
+      return new Response('Unauthorized', {
+        status: 401,
+        headers: { 'WWW-Authenticate': 'Basic realm="AppFlowy"' },
+      });
+    }
+  }
 
   if (reqUrl.pathname === '/') {
     timer();
