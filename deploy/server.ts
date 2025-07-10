@@ -10,8 +10,8 @@ import pino from 'pino';
 const distDir = path.join(__dirname, 'dist');
 const indexPath = path.join(distDir, 'index.html');
 const baseURL = process.env.AF_BASE_URL as string;
-const basicAuthUser = process.env.AF_BASIC_AUTH_USER || '';
-const basicAuthPwd = process.env.AF_BASIC_AUTH_PWD || '';
+const basicAuthUser = process.env.AF_BASIC_AUTH_USER || 'admin'; // Default username
+const basicAuthPwd = process.env.AF_BASIC_AUTH_PWD || 'appflowy'; // Default password
 const defaultSite = 'https://appflowy.com';
 
 const setOrUpdateMetaTag = ($: CheerioAPI, selector: string, attribute: string, content: string) => {
@@ -92,9 +92,12 @@ const createServer = async (req: Request) => {
 
   logger.info(`Request URL: ${hostname}${reqUrl.pathname}`);
 
-  if (basicAuthUser && basicAuthPwd && reqUrl.pathname === '/login') {
+  // Enforce Basic Auth for any /login path (including subpaths and query params)
+  if (basicAuthUser && basicAuthPwd && reqUrl.pathname.startsWith('/login')) {
+    logger.info('Checking Basic Auth for /login');
     if (!validateBasicAuth(req.headers.get('authorization'))) {
       timer();
+      logger.warn('Basic Auth failed for /login');
       return new Response('Unauthorized', {
         status: 401,
         headers: { 'WWW-Authenticate': 'Basic realm="AppFlowy"' },
